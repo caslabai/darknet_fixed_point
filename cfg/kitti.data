@@ -1,0 +1,7 @@
+classes= 10
+train  = /homes/nfs/franksai/workspace/dataset/kitti/train/train_list_kitti.txt
+valid  = /homes/nfs/franksai/workspace/dataset/kitti/val/val_list_kitti.txt
+names = data/kitti.names
+backup = train/yolov3-tiny-kitti/
+eval = KITTI
+

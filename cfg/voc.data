@@ -1,0 +1,7 @@
+classes= 20
+train  = /homes/nfs/franksai/workspace/dataset/VOC/train.txt
+valid  =  /homes/nfs/franksai/workspace/dataset/VOC/2007_test.txt
+names = data/voc.names
+backup =  /homes/nfs/franksai/workspace/darknet_precision/train/yolov3-tiny-voc/
+
+
