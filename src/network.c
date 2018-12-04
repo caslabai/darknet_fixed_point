@@ -30,6 +30,8 @@
 #include "yolo_layer.h"
 #include "upsample_layer.h"
 #include "parser.h"
+double total_power;
+double total_power_ft;
 
 network *load_network_custom(char *cfg, char *weights, int clear, int batch)
 {
@@ -544,7 +546,10 @@ float *network_predict(network net, float *input)
     state.truth = 0;
     state.train = 0;
     state.delta = 0;
+    total_power=0;
+    total_power_ft=0;
     forward_network(net, state);
+    printf("total_power: %e, power reduce:%.3f %% \n " ,total_power , (1-(total_power/total_power_ft ))*100 );
     float *out = get_network_output(net);
     return out;
 }

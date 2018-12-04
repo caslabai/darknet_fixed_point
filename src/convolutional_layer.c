@@ -22,6 +22,10 @@
 void forward_xnor_layer(layer l, network_state state);
 #endif
 
+
+extern double total_power;
+extern double total_power_ft;
+
 void swap_binary(convolutional_layer *l)
 {
     float *swap = l->weights;
@@ -697,6 +701,45 @@ size_t binary_transpose_align_input(int k, int n, float *b, char **t_bit_input, 
     return t_intput_size;
 }
 
+void calculate_power_cost(int conv_mul,int conv_add,int bias_add,int gemm_l,int bias_l ){
+
+float  fixed_multiplier_power[32];
+float  float_multiplier_power[32];
+float  fixed_adder_power[32];
+float  float_adder_power[32];
+float float_mul, float_add;
+float  conv_mul_power,conv_add_power , bias_add_power; 
+
+//with latency=1; power(W)
+    float_mul=0.0147;
+    float_add=0.0152;
+    fixed_multiplier_power[4] = 0.0001023;
+    fixed_multiplier_power[8] = 0.0005231;
+    fixed_multiplier_power[16]= 0.002067;
+    fixed_adder_power[4]=  0.00003566;
+    fixed_adder_power[8]=  0.0001163;
+    fixed_adder_power[16]= 0.0002821;
+
+    if (gemm_l<4) gemm_l=4;
+    else if(gemm_l<8) gemm_l=8;
+    else gemm_l=16;
+
+    if (bias_l<4) bias_l=4;
+    else if(bias_l<8) bias_l=8;
+    else bias_l=16;
+
+    conv_mul_power = conv_mul*fixed_multiplier_power[gemm_l];
+    conv_add_power = conv_add*fixed_adder_power[gemm_l];
+    bias_add_power = bias_add*fixed_adder_power[bias_l];
+    printf("multiplier power cost: \t%f\n",conv_mul_power );
+    printf("adder power cost: \t%f\n",conv_add_power+bias_add_power );
+    total_power += conv_mul_power +conv_add_power +bias_add_power ;
+    
+    total_power_ft += conv_mul*float_mul + (conv_add+bias_add)*float_add ;
+
+
+}
+
 
 void forward_convolutional_layer(convolutional_layer l, network_state state)
 {
@@ -900,10 +943,11 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                 gemm(0, 0, m, n, k, 1, a, k, b, n, 1, c, n);
             else{
                 struct distributed w_data_dis, data_dis ; 
-                    data_dis = cal_distribution(state.workspace , input_tensor_len ); 
+                    data_dis = cal_distribution(state.workspace , input_tensor_len );
                     //printf("in_mode= %d\n",data_dis.mode ) ;
                     g_i_part = find_int_part(data_dis,3);
                     g_i_part = max( log( abs( data_dis.mode))/log( 2) ,g_i_part );
+                    //g_i_part = 4;//[TEST]
                     data_dis = cal_distribution(l.weights , weight_len  );  
                     g_f_part = find_frac_part(data_dis,1,0.5);
  
@@ -912,7 +956,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                     array2fixed(state.workspace , input_tensor_len, g_i_part ,g_f_part);
                 gemm(0, 0, m, n, k, 1, a, k, b, n, 1, c, n);
                     printf("\tG: bitwise, %d  <%d,%d>\n",g_i_part+g_f_part,g_i_part,g_f_part);
-                    printf( "\tmlutiplt count: %ld, add %ld\n ",weight_len*out_h*out_w*l.n , ( weight_len-1)*out_h*out_w*l.n  );
+                    //printf( "\tmlutiplt count: %ld, add %ld\n ",weight_len*out_h*out_w*l.n , ( weight_len-1)*out_h*out_w*l.n  );
             }
 
 #endif
@@ -929,21 +973,23 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
     add_bias(l.output, l.biases, l.batch, l.n, out_h*out_w);
 #else
     struct distributed b_data_dis,o_data_dis; 
-    int mode=0;
+    int mode=0,b_i_tmp;
     //b_data_dis = cal_distribution(l.biases  , bias_len);
     if( state.index == 0)
         add_bias(l.output, l.biases, l.batch, l.n, out_h*out_w);
     else{
             //i_part
             data_dis = cal_distribution(l.output ,output_tensor_len ); 
-            g_i_part = find_int_part(data_dis,3);
+            b_i_tmp = find_int_part(data_dis,3);
+            //b_i_tmp = 4; //[TEST] 
             mode=data_dis.mode;
                     //printf("mid_mode= %d\n",data_dis.mode ) ;
             data_dis = cal_distribution(l.biases , bias_len );  
-            b_i_part = find_int_part(data_dis,3); //b_i_part=4;
+            b_i_part = find_int_part(data_dis,3); 
+            //b_i_part=4;
             if( abs( mode)< abs( data_dis.mode)) mode=data_dis.mode;
                     //printf("bias_mode= %d\n",data_dis.mode ) ;
-            b_i_part = max(g_i_part,b_i_part );
+            b_i_part = max(b_i_tmp,b_i_part );
             b_i_part = max( log( abs( mode))/log( 2) ,b_i_part );
             
             //f_part
@@ -955,9 +1001,6 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
             array2fixed( l.biases, bias_len         , b_i_part, b_f_part);
         add_bias(l.output, l.biases, l.batch, l.n, out_h*out_w);
             printf("\tB: bitwise, %d  <%d,%d>\n",b_i_part+b_f_part,b_i_part,b_f_part);
-            printf( "\tadd count: %d\n ",out_h*out_w*l.n  );
-
-            
     }
 
     struct distributed b_data_dis2; 
@@ -966,7 +1009,18 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
 #endif
 
     activate_array_cpu_custom(l.output, m*n*l.batch, l.activation);
+    //printf( "\tactivation op count: %d\n ",out_h*out_w*l.n  );
+    
+ 
+    int conv_mul,conv_add,bias_add;
+    int filter_size= l.size*l.size*l.c;
+    conv_mul= l.n*out_w*out_h*(filter_size)   ;
+    conv_add= l.n*out_w*out_h*(filter_size-1)   ;
+    bias_add= l.n*out_w*out_h*l.n   ;
+    //printf("convolution *count: %d, +count: %d\n",conv_mul,conv_add);
+    //printf( "\tbias +count: %d\n ", bias_add  );
 
+    calculate_power_cost(conv_mul,conv_add,bias_add,g_i_part+g_f_part,b_i_part+b_f_part );
     if(l.binary || l.xnor) swap_binary(&l);
 
 
