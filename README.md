@@ -32,12 +32,25 @@ You can setup frational point in `fixed.h`.
     [Todo] make doc.
 
 
+# Genarate fixed point config
+
+We need to decide fractional point for each layer by some data.
+Set `FIND_POINT & GEMM_FIXED & BIAS_FIXED =1` in Makefile and `make -j40`
+Run `./index kitti_small -m #run 20 image for decide fractional point `
+Set `FIND_POINT=0 ` in Makefile and `make -j40`
+Run project with fixed point config file. 
+
+
 # Run 
 
-`./index [kitti/voc/coco] -[i/m/t/...]`
+`./index [kitti/voc/coco] -[?/i/m/t/...]`
 
 Choose the dataset you want and the opration to do.
 You need to build up dataset first.
+
+
+
+
 
 
 
