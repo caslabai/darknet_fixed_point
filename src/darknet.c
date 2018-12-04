@@ -32,6 +32,11 @@ extern void run_go(int argc, char **argv);
 extern void run_art(int argc, char **argv);
 extern void run_super(int argc, char **argv);
 
+int g_i_list[199];
+int g_f_list[199];
+int b_i_list[199];
+int b_f_list[199];
+
 void average(int argc, char *argv[])
 {
     char *cfgfile = argv[2];
@@ -74,11 +79,11 @@ void average(int argc, char *argv[])
             int num = l.n*l.c*l.size*l.size;
             scal_cpu(l.n, 1./n, l.biases, 1);
             scal_cpu(num, 1./n, l.weights, 1);
-                if(l.batch_normalize){
-                    scal_cpu(l.n, 1./n, l.scales, 1);
-                    scal_cpu(l.n, 1./n, l.rolling_mean, 1);
-                    scal_cpu(l.n, 1./n, l.rolling_variance, 1);
-                }
+            if(l.batch_normalize){
+                scal_cpu(l.n, 1./n, l.scales, 1);
+                scal_cpu(l.n, 1./n, l.rolling_mean, 1);
+                scal_cpu(l.n, 1./n, l.rolling_variance, 1);
+            }
         }
         if(l.type == CONNECTED){
             scal_cpu(l.outputs, 1./n, l.biases, 1);
@@ -350,15 +355,71 @@ void visualize(char *cfgfile, char *weightfile)
 
 int main(int argc, char **argv)
 {
+    int i;
 #ifdef _DEBUG
-	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
-	int i;
-	for (i = 0; i < argc; ++i) {
-		if (!argv[i]) continue;
-		strip_args(argv[i]);
-	}
+
+#ifdef FIND_POINT
+    for(i=0;i<20;i++){
+        g_i_list[i]=0;
+        g_f_list[i]=0;
+        b_i_list[i]=0;
+        b_f_list[i]=0;
+    }
+#else
+    FILE *fp;
+    fp=fopen("fixed.conf","r");
+    char * line = NULL;
+    char * fixed_name = NULL;
+    char * fixed_list = NULL;
+    char * tmp = NULL;
+    size_t len = 0;
+
+    while ((getline(&line, &len, fp)) != -1) {
+        //printf("%s", line);
+        
+        fixed_name = strtok(line, ":" );
+        fixed_list = strtok(NULL, ":\n");
+        
+        printf("%s\n",fixed_name);
+        printf("%s\n",fixed_list);
+        
+        tmp = strtok(fixed_list , " ");
+        i=0;
+        //printf("%s<<<\n",fixed_name );
+        while(tmp != NULL ){
+            //printf("%s\n",tmp );
+            //printf("%d\n",atoi(tmp));
+            if(      0 == strcmp(fixed_name,"g_i_part")) g_i_list[i] = atoi(tmp);//,printf("1 ");
+            else if( 0 == strcmp(fixed_name,"g_f_part")) g_f_list[i] = atoi(tmp);//,printf("2 ");
+            else if( 0 == strcmp(fixed_name,"b_i_part")) b_i_list[i] = atoi(tmp);//,printf("3 ");
+            else if( 0 == strcmp(fixed_name,"b_f_part")) b_f_list[i] = atoi(tmp);//,printf("4 ");
+            else printf("parser ERROR!!\n"), exit(1);
+            
+            tmp = strtok(NULL , " ");
+            i++;
+        }
+    }
+
+    printf("\n");
+    for(i=0;i<20;i++)   printf("%d ",g_i_list[i]);
+    printf("\n");
+    for(i=0;i<20;i++)   printf("%d ",g_f_list[i]);
+    printf("\n");
+    for(i=0;i<20;i++)   printf("%d ",b_i_list[i]);
+    printf("\n");
+    for(i=0;i<20;i++)   printf("%d ",b_f_list[i]);
+    printf("\n");
+
+
+#endif
+
+    for (i = 0; i < argc; ++i) {
+        if (!argv[i]) continue;
+        strip_args(argv[i]);
+    }
 
     //test_resize("data/bad.jpg");
     //test_box();
@@ -395,7 +456,7 @@ int main(int argc, char **argv)
         run_detector(argc, argv);
     } else if (0 == strcmp(argv[1], "detect")){
         float thresh = find_float_arg(argc, argv, "-thresh", .24);
-		int ext_output = find_arg(argc, argv, "-ext_output");
+        int ext_output = find_arg(argc, argv, "-ext_output");
         char *filename = (argc > 4) ? argv[4]: 0;
         test_detector("cfg/coco.data", argv[2], argv[3], filename, thresh, ext_output);
     } else if (0 == strcmp(argv[1], "cifar")){

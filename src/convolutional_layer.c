@@ -25,6 +25,10 @@ void forward_xnor_layer(layer l, network_state state);
 
 extern double total_power;
 extern double total_power_ft;
+extern int g_i_list[199];
+extern int g_f_list[199];
+extern int b_i_list[199];
+extern int b_f_list[199];
 
 void swap_binary(convolutional_layer *l)
 {
@@ -731,8 +735,8 @@ float  conv_mul_power,conv_add_power , bias_add_power;
     conv_mul_power = conv_mul*fixed_multiplier_power[gemm_l];
     conv_add_power = conv_add*fixed_adder_power[gemm_l];
     bias_add_power = bias_add*fixed_adder_power[bias_l];
-    printf("multiplier power cost: \t%f\n",conv_mul_power );
-    printf("adder power cost: \t%f\n",conv_add_power+bias_add_power );
+    //printf("multiplier power cost: \t%f\n",conv_mul_power );
+    //printf("adder power cost: \t%f\n",conv_add_power+bias_add_power );
     total_power += conv_mul_power +conv_add_power +bias_add_power ;
     
     total_power_ft += conv_mul*float_mul + (conv_add+bias_add)*float_add ;
@@ -942,25 +946,33 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
             if(state.index == 0)
                 gemm(0, 0, m, n, k, 1, a, k, b, n, 1, c, n);
             else{
-                struct distributed w_data_dis, data_dis ; 
+
+#ifdef FIND_POINT
+                 struct distributed  data_dis ; 
                     data_dis = cal_distribution(state.workspace , input_tensor_len );
                     //printf("in_mode= %d\n",data_dis.mode ) ;
-                    g_i_part = find_int_part(data_dis,3);
-                    g_i_part = max( log( abs( data_dis.mode))/log( 2) ,g_i_part );
-                    //g_i_part = 4;//[TEST]
+                    g_i_part = max( log( abs( data_dis.mode))/log( 2) ,  find_int_part(data_dis,3) );
+                    g_i_list[state.index ] += g_i_part;
+                    //f_part
                     data_dis = cal_distribution(l.weights , weight_len  );  
                     g_f_part = find_frac_part(data_dis,1,0.5);
- 
-                    //printf("g_f_part>>>>>>>>\t %d \n",g_f_part ); 
-                    array2fixed(l.weights,weight_len,g_i_part,g_f_part);
-                    array2fixed(state.workspace , input_tensor_len, g_i_part ,g_f_part);
+                    g_f_list[state.index ] = g_f_part;
+#else
+                    g_i_part = g_i_list[state.index];
+                    g_f_part = g_f_list[state.index];
+                    //printf("%d ",g_f_part);
+
+#endif
+                array2fixed(l.weights,weight_len,g_i_part,g_f_part);
+                array2fixed(state.workspace , input_tensor_len, g_i_part ,g_f_part);
                 gemm(0, 0, m, n, k, 1, a, k, b, n, 1, c, n);
-                    printf("\tG: bitwise, %d  <%d,%d>\n",g_i_part+g_f_part,g_i_part,g_f_part);
-                    //printf( "\tmlutiplt count: %ld, add %ld\n ",weight_len*out_h*out_w*l.n , ( weight_len-1)*out_h*out_w*l.n  );
+                    //printf("\tG: bitwise, %d  <%d,%d>\n",g_i_part+g_f_part,g_i_part,g_f_part);
             }
 
 #endif
-
+            
+            
+            
         }
         c += n*m;
         state.input += l.c*l.h*l.w;
@@ -969,6 +981,9 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
     if(l.batch_normalize){
         forward_batchnorm_layer(l, state);
     }
+
+
+
 #ifndef BIAS_FIXED
     add_bias(l.output, l.biases, l.batch, l.n, out_h*out_w);
 #else
@@ -979,32 +994,39 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
         add_bias(l.output, l.biases, l.batch, l.n, out_h*out_w);
     else{
             //i_part
+#ifdef FIND_POINT
             data_dis = cal_distribution(l.output ,output_tensor_len ); 
             b_i_tmp = find_int_part(data_dis,3);
-            //b_i_tmp = 4; //[TEST] 
             mode=data_dis.mode;
                     //printf("mid_mode= %d\n",data_dis.mode ) ;
             data_dis = cal_distribution(l.biases , bias_len );  
             b_i_part = find_int_part(data_dis,3); 
-            //b_i_part=4;
             if( abs( mode)< abs( data_dis.mode)) mode=data_dis.mode;
                     //printf("bias_mode= %d\n",data_dis.mode ) ;
             b_i_part = max(b_i_tmp,b_i_part );
             b_i_part = max( log( abs( mode))/log( 2) ,b_i_part );
-            
+            b_i_list[state.index] += b_i_part;
+
             //f_part
             data_dis = cal_distribution(l.biases , bias_len  );  
-            //data_dis = cal_distribution(l.output , output_tensor_len  );  
             b_f_part = find_frac_part(data_dis,1,0.5);
-            //cal fixed
-            array2fixed( l.output, output_tensor_len, b_i_part, b_f_part );
-            array2fixed( l.biases, bias_len         , b_i_part, b_f_part);
+            b_f_list[state.index ] = b_f_part;
+
+
+#else
+            b_i_part = b_i_list[state.index];
+            b_f_part = b_f_list[state.index];
+            //printf("%d ",b_i_part);
+#endif
+        //cal fixed 
+        array2fixed( l.output, output_tensor_len, b_i_part, b_f_part );
+        array2fixed( l.biases, bias_len         , b_i_part, b_f_part);
         add_bias(l.output, l.biases, l.batch, l.n, out_h*out_w);
-            printf("\tB: bitwise, %d  <%d,%d>\n",b_i_part+b_f_part,b_i_part,b_f_part);
+            //printf("\tB: bitwise, %d  <%d,%d>\n",b_i_part+b_f_part,b_i_part,b_f_part);
     }
 
-    struct distributed b_data_dis2; 
-    b_data_dis2 = cal_distribution(l.biases , bias_len);
+    //struct distributed b_data_dis2; 
+    //b_data_dis2 = cal_distribution(l.biases , bias_len);
     //printf("bias ave\t %f\n", b_data_dis.ave - b_data_dis2.ave ); 
 #endif
 

@@ -23,6 +23,11 @@ get_data(){
             weight=./weights/train/yolov3-tiny-kitti_f_tmp.weights
             data=./cfg/kitti.data
             ;;
+        kitti_small)  
+            cfg=./cfg/yolov3-tiny-kitti.cfg
+            weight=./weights/train/yolov3-tiny-kitti_f_tmp.weights
+            data=./cfg/kitti_small.data
+            ;;
     
         #------voc------
         voc)   

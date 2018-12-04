@@ -33,6 +33,13 @@ void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_
 
 #include "http_stream.h"
 
+
+extern int g_i_list[199];
+extern int g_f_list[199];
+extern int b_i_list[199];
+extern int b_f_list[199];
+
+
 int check_mistakes;
 
 static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
@@ -566,6 +573,8 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float
     char **names = get_labels(name_list);
     char *mapf = option_find_str(options, "map", 0);
     int *map = 0;
+
+
     if (mapf) map = read_map(mapf);
     FILE* reinforcement_fd = NULL;
 
@@ -773,6 +782,21 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float
             free_image(val_resized[t]);
         }
     }
+
+#ifdef FIND_POINT
+FILE *ft = fopen("fixed.conf","w+");
+
+    fprintf(ft,"g_i_part: ");
+    for(i=0;i<net.n ;i++) fprintf(ft,"%d ",(int)ceil( (float)g_i_list[i]/20.0 ) );
+    fprintf(ft,"\ng_f_part: ");
+    for(i=0;i<net.n ;i++) fprintf(ft,"%d ",g_f_list[i]);
+    fprintf(ft,"\nb_i_part: ");
+    for(i=0;i<net.n ;i++) fprintf(ft,"%d ",(int)ceil( (float)b_i_list[i]/20.0 ) );
+    fprintf(ft,"\nb_f_part: ");
+    for(i=0;i<net.n ;i++) fprintf(ft,"%d ",b_f_list[i]);
+
+    //printf("\n");
+#endif
 
     if((tp_for_thresh + fp_for_thresh) > 0)
         avg_iou = avg_iou / (tp_for_thresh + fp_for_thresh);
