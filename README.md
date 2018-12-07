@@ -31,13 +31,13 @@ You can setup frational point in `fixed.h`.
 
 
 #Model
-    Default with yolov3-tiny or yolov3
-    you can get more yolo model at https://pjreddie.com/darknet/yolo/
+    Default with yolov3-tiny or yolov3 
+    you can get more yolo model at https://pjreddie.com/darknet/yolo/ 
     get model for image classify at https://pjreddie.com/darknet/imagenet
+
 
 <table id="compare">
 
-  <thead>
       <tr><th style="text-align:left;" role="columnheader">Model</th>
           <th style="text-align:right;" role="columnheader">Top-1</th> 
               <th style="text-align:right;" role="columnheader">Top-5</th>
@@ -46,7 +46,7 @@ You can setup frational point in `fixed.h`.
                           <th style="text-align:right; " role="columnheader">CPU</th>
                               <th style="text-align:right; " role="columnheader">Cfg</th>
                                   <th style="text-align:right; " role="columnheader">Weights</th>
-                                    </tr></thead>
+                                    </tr>
 
                                      <tbody><tr>
                                      <td><a href="#alexnet">AlexNet</a></td>
