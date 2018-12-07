@@ -67,4 +67,24 @@ int find_frac_part(struct distributed data_dis, float range ,float error ){
 return f_part;
 }
 
+int fixed_policy_adjust(int i_part, int p_part ,int method ){
+    int data= i_part + p_part ;
+    switch(method){
+        case 0:
+            return p_part;
+
+        case 1:
+            if (data< 4) data=4;
+            else if(data< 8) data=8;
+            else if(data<16) data=16;
+            else  data=16 ,printf("[fixed.h] convert loss\n");
+            p_part= data-i_part;
+            return p_part;
+        
+    
+        default:
+            return p_part;
+    
+    }
+}
 

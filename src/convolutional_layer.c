@@ -25,6 +25,8 @@ void forward_xnor_layer(layer l, network_state state);
 
 extern double total_power;
 extern double total_power_ft;
+extern double weight_storage_ft;
+extern double weight_storage;
 extern int g_i_list[199];
 extern int g_f_list[199];
 extern int b_i_list[199];
@@ -705,12 +707,17 @@ size_t binary_transpose_align_input(int k, int n, float *b, char **t_bit_input, 
     return t_intput_size;
 }
 
+void calculate_weight_storage(int weight_count  ,int bias_count  ,int gemm_l ,int bias_l){
+    weight_storage_ft += weight_count*32 + bias_count*32;
+    weight_storage += weight_count*gemm_l + bias_count*bias_l;
+}
+
 void calculate_power_cost(int conv_mul,int conv_add,int bias_add,int gemm_l,int bias_l ){
 
 float  fixed_multiplier_power[32];
 float  float_multiplier_power[32];
-float  fixed_adder_power[32];
-float  float_adder_power[32];
+float  fixed_adder_power[32]   ;
+float  float_adder_power[32]   ;
 float float_mul, float_add;
 float  conv_mul_power,conv_add_power , bias_add_power; 
 
@@ -740,6 +747,10 @@ float  conv_mul_power,conv_add_power , bias_add_power;
     total_power += conv_mul_power +conv_add_power +bias_add_power ;
     
     total_power_ft += conv_mul*float_mul + (conv_add+bias_add)*float_add ;
+
+    //weight_storage += conv_mul*32 ;
+    //weight_storage_ft += ;
+    
 
 
 }
@@ -954,7 +965,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                     g_i_part = max( log( abs( data_dis.mode))/log( 2) ,  find_int_part(data_dis,3) );
                     g_i_list[state.index ] += g_i_part;
                     //f_part
-                    data_dis = cal_distribution(l.weights , weight_len  );  
+                    data_dis = cal_distribution(l.weights , weight_len );  
                     g_f_part = find_frac_part(data_dis,1,0.5);
                     g_f_list[state.index ] = g_f_part;
 #else
@@ -962,7 +973,11 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                     g_f_part = g_f_list[state.index];
                     //printf("%d ",g_f_part);
 
+                    g_f_part= fixed_policy_adjust(g_i_part,g_f_part ,getenv("FIXED_POLICY_ADJUST"));
+
 #endif
+
+
                 array2fixed(l.weights,weight_len,g_i_part,g_f_part);
                 array2fixed(state.workspace , input_tensor_len, g_i_part ,g_f_part);
                 gemm(0, 0, m, n, k, 1, a, k, b, n, 1, c, n);
@@ -1043,6 +1058,9 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
     //printf( "\tbias +count: %d\n ", bias_add  );
 
     calculate_power_cost(conv_mul,conv_add,bias_add,g_i_part+g_f_part,b_i_part+b_f_part );
+    calculate_weight_storage(filter_size*l.n , l.n, g_i_part+g_f_part,b_i_part+b_f_part  );
+    
+    
     if(l.binary || l.xnor) swap_binary(&l);
 
 

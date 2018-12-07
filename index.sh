@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export FIXED_PLOICY_ADJUST=1
+
 #cfg=''
 #weight=''
 #data=''
@@ -35,7 +37,14 @@ get_data(){
             weight=./weights/train/yolov3-tiny-voc_final.weights
             data=./cfg/voc.data
             ;;
-    
+        voc_small)   
+            cfg=./cfg/yolov3-tiny-voc.cfg
+            weight=./weights/train/yolov3-tiny-voc_final.weights
+            data=./cfg/voc_small.data
+            ;;
+
+
+
         #------coco------
         coco)   
             #cfg=./cfg/yolov3.cfg
@@ -44,6 +53,18 @@ get_data(){
             weight=./weights/yolov3-tiny.weights
             data=./cfg/coco.data
         ;;
+
+        coco_small)   
+            #cfg=./cfg/yolov3.cfg
+            #weight=./weights/yolov3.weights
+            cfg=./cfg/yolov3-tiny.cfg
+            weight=./weights/yolov3-tiny.weights
+            data=./cfg/coco_small.data
+        ;;
+
+
+
+
     esac
 }
 

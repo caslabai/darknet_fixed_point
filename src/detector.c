@@ -784,7 +784,8 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float
     }
 
 #ifdef FIND_POINT
-FILE *ft = fopen("fixed.conf","w+");
+
+FILE *ft = fopen("fixed_coco.conf","w+");
 
     fprintf(ft,"g_i_part: ");
     for(i=0;i<net.n ;i++) fprintf(ft,"%d ",(int)ceil( (float)g_i_list[i]/20.0 ) );

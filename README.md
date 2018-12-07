@@ -6,7 +6,6 @@ You can setup frational point in `fixed.h`.
 (only simulate the value range to fixed-point still calculate with float on cpu)
 
 
-
 # Dataset
 
     explain how to build up dataset
@@ -34,11 +33,11 @@ You can setup frational point in `fixed.h`.
 
 # Genarate fixed point config
 
-We need to decide fractional point for each layer by some data.
-Set `FIND_POINT & GEMM_FIXED & BIAS_FIXED =1` in Makefile and `make -j40`
-Run `./index kitti_small -m #run 20 image for decide fractional point `
-Set `FIND_POINT=0 ` in Makefile and `make -j40`
-Run project with fixed point config file. 
+We need to decide fractional point for each layer by some data. <br>
+Set `FIND_POINT & GEMM_FIXED & BIAS_FIXED =1` in Makefile and `make -j40`<br>
+Run `./index kitti_small -m #run 20 image for decide fractional point `<br>
+Set `FIND_POINT=0 ` in Makefile and `make -j40`<br>
+Run project with fixed point config file. <br>
 
 
 # Run 

@@ -353,24 +353,10 @@ void visualize(char *cfgfile, char *weightfile)
 #endif
 }
 
-int main(int argc, char **argv)
-{
-    int i;
-#ifdef _DEBUG
-    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-#endif
-
-
-#ifdef FIND_POINT
-    for(i=0;i<20;i++){
-        g_i_list[i]=0;
-        g_f_list[i]=0;
-        b_i_list[i]=0;
-        b_f_list[i]=0;
-    }
-#else
+void load_binary_point(char *filename ){
+int i;
     FILE *fp;
-    fp=fopen("fixed.conf","r");
+    fp=fopen(filename,"r");
     char * line = NULL;
     char * fixed_name = NULL;
     char * fixed_list = NULL;
@@ -402,7 +388,7 @@ int main(int argc, char **argv)
             i++;
         }
     }
-
+    /*
     printf("\n");
     for(i=0;i<20;i++)   printf("%d ",g_i_list[i]);
     printf("\n");
@@ -412,7 +398,29 @@ int main(int argc, char **argv)
     printf("\n");
     for(i=0;i<20;i++)   printf("%d ",b_f_list[i]);
     printf("\n");
+    */
 
+
+
+}
+
+int main(int argc, char **argv)
+{
+    int i;
+#ifdef _DEBUG
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
+
+
+#ifdef FIND_POINT
+    for(i=0;i<20;i++){
+        g_i_list[i]=0;
+        g_f_list[i]=0;
+        b_i_list[i]=0;
+        b_f_list[i]=0;
+    }
+#else
+    load_binary_point("fixed_kitti.conf");
 
 #endif
 
