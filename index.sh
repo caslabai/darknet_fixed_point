@@ -114,6 +114,11 @@ do
             ./darknet detector calc_anchors $data -num_of_clusters 9 -width 416 -height 416
             ;;
     
+        r)
+            ./darknet classifier predict cfg/imagenet1k.data cfg/darknet19.cfg darknet19.weights data/eagle.jpg
+
+        ;;
+
         \?)
             exit 0
             ;;
