@@ -1,14 +1,21 @@
 #!/bin/bash
 
-export FIXED_PLOICY_ADJUST=1
+find_new_fixed1=0
+#export RESTORE_BINARY_POINT=fixed_inet.conf
+export RESTORE_BINARY_POINT=qvalue/fixed_Qvalue_yolov3tiny_kitti,Q5_8.fixed
+#qvalue/fixed_Qvalue_yolov3tiny_kitti,Ki_1,Kf_1,af_0.25.fixed
+#fixed_kitti.conf
+#qvalue/fixed_Qvalue_alexnet,Ki_3,Kf_1,af_0.25.fixed
+#qvalue/fixed_Qvalue,Ki_3,Kf_1,af_0.5.fixed
+export STORE_BINARY_POINT=qvalue/fixed_Qvalue_yolov3tiny_cooc,Ki_1,Kf_1,af_0.75.fixed
+#fixed_inet_2.conf
 
-#cfg=''
-#weight=''
-#data=''
 
 pre_weight=./train/yolov3-tiny-voc/yolov3-tiny-voc_88600.weights
 #pre_weight=weights/yolov3-tiny.conv.15
 
+
+export FIXED_PLOICY_ADJUST=0
 
 
 
@@ -62,7 +69,17 @@ get_data(){
             data=./cfg/coco_small.data
         ;;
 
-
+        #------imagenet------
+        imagenet)
+            cfg=./cfg/alexnet.cfg
+            weight=./weights/alexnet.weights
+            data=./cfg/imagenet1k.data
+        ;;
+        imagenet_small)
+            cfg=./cfg/alexnet.cfg
+            weight=./weights/alexnet.weights
+            data=./cfg/imagenet1k_small.data
+        ;;
 
 
     esac
@@ -92,7 +109,7 @@ usage()
 get_data $1 
 shift
 
-while getopts "tmica"  OPTION
+while getopts "tmicarvb"  OPTION
 do
     case $OPTION in
         t)
@@ -103,7 +120,8 @@ do
             ./darknet detector map $data  $cfg $weight 
             ;;
         i)
-            ./darknet detector test $data  $cfg  $weight  data/bus.jpg -ext_output -thresh 0.2
+            #./darknet detector test $data  $cfg  $weight  data/bus.jpg -ext_output -thresh 0.2
+            ./darknet detector test $data  $cfg  $weight  data/cars_kitti.png -ext_output -thresh 0.2
             ;;
         c)
             keeplayers=15
@@ -115,8 +133,21 @@ do
             ;;
     
         r)
-            ./darknet classifier predict cfg/imagenet1k.data cfg/darknet19.cfg darknet19.weights data/eagle.jpg
+            #gdb -arg ./darknet classifier predict $data $cfg $weight data/eagle.jpg
+            ./darknet classifier predict $data $cfg $weight data/dog.jpg
+        ;;
 
+        v)#find new fixed point
+            #export FIND_NEW_FIXED=$find_new_fixed1
+            #make clean
+            #make -j40 FIND_POINT="$find_new_fixed1"
+            #./darknet detector map $data $cfg $weight
+            ./darknet classifier valid $data $cfg  $weight
+            ;;
+
+        b)
+            make clean
+            make -j40  FIND_POINT="$find_new_fixed1"
         ;;
 
         \?)

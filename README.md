@@ -25,12 +25,12 @@ You can setup frational point in `fixed.h`.
     updating... 
     [Todo] collecting convertion code & make doc.
 
-##imagenet
+## imagenet
     download at: https://www.zybuluo.com/nrailgun/note/488084 <br>
     follow by : https://pjreddie.com/darknet/imagenet/ <br>
 
 
-#Model
+# Model
     Default with yolov3-tiny or yolov3 <br>
     you can get more yolo model at https://pjreddie.com/darknet/yolo/ <br>
     get model for image classify at https://pjreddie.com/darknet/imagenet <br>
@@ -38,33 +38,35 @@ You can setup frational point in `fixed.h`.
 
 
 
-
-
-
 # Training
 
-    how to train your own model... 
+    how to train your own model...   <br>
     [Todo] make doc.
 
 
 # Genarate fixed point config
 
 We need to decide fractional point for each layer by some data. <br>
-Set `FIND_POINT & GEMM_FIXED & BIAS_FIXED =1` in Makefile and `make -j40`<br>
+Set ` GEMM_FIXED & BIAS_FIXED =1` in Makefile <br>
+Set ` find_new_fixed=1` in `index.sh` and `index xx -b` <br>
 Run `./index kitti_small -m #run 20 image for decide fractional point `<br>
-Set `FIND_POINT=0 ` in Makefile and `make -j40`<br>
+
+Set `find_new_fixed=0 ` in `index.sh` and `index xx -b`<br>
 Run project with fixed point config file. <br>
 
 
 # Run 
 
-Run yolov3-tiny for different config
-`./index [kitti/voc/coco] -[?/i/m/t/...]`
+Run yolov3-tiny for different config <br>
+`./index [kitti/voc/coco] -[?/i/m/t/...]` <br>
 
-Choose the dataset you want and the opration to do.
-You need to build up dataset first.
+Choose the dataset you want and the opration to do.<br>
+You need to build up dataset first.<br>
 
 
+image classify<br>
+`./darknet classifier predict cfg/imagenet1k.data cfg/darknet19.cfg darknet19.weights`
+`./darknet classifier valid cfg/imagenet1k.data cfg/darknet19.cfg darknet19.weights`
 
 
 

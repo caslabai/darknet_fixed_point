@@ -75,7 +75,20 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
         float *B, int ldb,
         float BETA,
         float *C, int ldc);
+//=============================fixed===========================================================
+void gemm_fixed(int TA, int TB, int M, int N, int K, float ALPHA,
+                    float *A, int lda,
+                    float *B, int ldb,
+                    float BETA,
+                    float *C, int ldc);
 
+void gemm_cpu_fixed(int TA, int TB, int M, int N, int K, float ALPHA,
+        float *A, int lda,
+        float *B, int ldb,
+        float BETA,
+        float *C, int ldc);
+
+//====================================================================================
 #ifdef GPU
 void gemm_ongpu(int TA, int TB, int M, int N, int K, float ALPHA,
         float *A_gpu, int lda,

@@ -29,6 +29,12 @@ void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_
 
 #endif
 
+
+extern int g_i_list[199];
+extern int g_f_list[199];
+extern int b_i_list[199];
+extern int b_f_list[199];
+
 float *get_regression_values(char **labels, int n)
 {
     float *v = calloc(n, sizeof(float));
@@ -562,6 +568,29 @@ void validate_classifier_single(char *datacfg, char *filename, char *weightfile)
 
         printf("%d: top 1: %f, top %d: %f\n", i, avg_acc/(i+1), topk, avg_topk/(i+1));
     }
+
+
+
+#ifdef FIND_POINT
+
+FILE *ft = fopen(getenv("STORE_BINARY_POINT"),"w+");
+
+double list_size= m;// plist->size ;
+printf("image count: >>>>>>> %f\n",list_size);
+fprintf(ft,"g_i_part: ");
+for(i=0;i<net.n ;i++) fprintf(ft,"%d ",(int)ceil( (float)g_i_list[i]/list_size ) );
+fprintf(ft,"\ng_f_part: ");
+for(i=0;i<net.n ;i++) fprintf(ft,"%d ",g_f_list[i]);
+fprintf(ft,"\nb_i_part: ");
+for(i=0;i<net.n ;i++) fprintf(ft,"%d ",(int)ceil( (float)b_i_list[i]/list_size) );
+fprintf(ft,"\nb_f_part: ");
+for(i=0;i<net.n ;i++) fprintf(ft,"%d ",b_f_list[i]);
+
+//printf("\n");
+#endif
+
+
+
 }
 
 void validate_classifier_multi(char *datacfg, char *filename, char *weightfile)

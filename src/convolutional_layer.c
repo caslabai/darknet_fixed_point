@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <time.h>
 #include "fixed.h"
+#include "extra.h"
 
 #ifdef CUDNN
 #pragma comment(lib, "cudnn.lib")
@@ -22,11 +23,11 @@
 void forward_xnor_layer(layer l, network_state state);
 #endif
 
-
+extern struct Fixed_arg_s fixed_arg;
 extern double total_power;
 extern double total_power_ft;
-extern double weight_storage_ft;
-extern double weight_storage;
+extern long int weight_storage_ft;
+extern long int weight_storage;
 extern int g_i_list[199];
 extern int g_f_list[199];
 extern int b_i_list[199];
@@ -543,6 +544,21 @@ void add_bias(float *output, float *biases, int batch, int n, int size)
         }
     }
 }
+void add_bias_fixed(float *output, float *biases, int batch, int n, int size)
+{
+    int i,j,b;
+    for(b = 0; b < batch; ++b){
+        for(i = 0; i < n; ++i){
+            for(j = 0; j < size; ++j){
+                //output[(b*n + i)*size + j] += biases[i];
+                output[(b*n + i)*size + j]=fix_mul_add(output[(b*n + i)*size + j],1,biases[i],16,16);
+            }
+        }
+    }
+}
+
+
+
 /*
 void add_bias_fixed(float *output, float *biases, int batch, int n, int size)
 {
@@ -709,15 +725,18 @@ size_t binary_transpose_align_input(int k, int n, float *b, char **t_bit_input, 
 
 void calculate_weight_storage(int weight_count  ,int bias_count  ,int gemm_l ,int bias_l){
     weight_storage_ft += weight_count*32 + bias_count*32;
-    weight_storage += weight_count*gemm_l + bias_count*bias_l;
+    
+    weight_storage    += weight_count*gemm_l + bias_count*bias_l;
+    //weight_storage    += weight_count*1 + bias_count*1;
+    //if(gemm_l>=32) printf("TTTTTTTTTTTTTTTTTTTTTTTTTTT%d\n",gemm_l);
 }
 
 void calculate_power_cost(int conv_mul,int conv_add,int bias_add,int gemm_l,int bias_l ){
 
-float  fixed_multiplier_power[32];
-float  float_multiplier_power[32];
-float  fixed_adder_power[32]   ;
-float  float_adder_power[32]   ;
+float  fixed_multiplier_power[33];
+float  float_multiplier_power[33];
+float  fixed_adder_power[33]   ;
+float  float_adder_power[33]   ;
 float float_mul, float_add;
 float  conv_mul_power,conv_add_power , bias_add_power; 
 
@@ -727,9 +746,11 @@ float  conv_mul_power,conv_add_power , bias_add_power;
     fixed_multiplier_power[4] = 0.0001023;
     fixed_multiplier_power[8] = 0.0005231;
     fixed_multiplier_power[16]= 0.002067;
+    fixed_multiplier_power[32]= 0.0107;
     fixed_adder_power[4]=  0.00003566;
     fixed_adder_power[8]=  0.0001163;
     fixed_adder_power[16]= 0.0002821;
+    fixed_adder_power[32]= 0.000483;
 
     if (gemm_l<4) gemm_l=4;
     else if(gemm_l<8) gemm_l=8;
@@ -742,6 +763,10 @@ float  conv_mul_power,conv_add_power , bias_add_power;
     conv_mul_power = conv_mul*fixed_multiplier_power[gemm_l];
     conv_add_power = conv_add*fixed_adder_power[gemm_l];
     bias_add_power = bias_add*fixed_adder_power[bias_l];
+
+    //conv_mul_power = conv_mul*fixed_multiplier_power[8];
+    //conv_add_power = conv_add*fixed_adder_power[8];
+    //bias_add_power = bias_add*fixed_adder_power[32];
     //printf("multiplier power cost: \t%f\n",conv_mul_power );
     //printf("adder power cost: \t%f\n",conv_add_power+bias_add_power );
     total_power += conv_mul_power +conv_add_power +bias_add_power ;
@@ -958,24 +983,24 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                 gemm(0, 0, m, n, k, 1, a, k, b, n, 1, c, n);
             else{
 
-#ifdef FIND_POINT
+    #ifdef FIND_POINT
                  struct distributed  data_dis ; 
                     data_dis = cal_distribution(state.workspace , input_tensor_len );
                     //printf("in_mode= %d\n",data_dis.mode ) ;
-                    g_i_part = max( log( abs( data_dis.mode))/log( 2) ,  find_int_part(data_dis,3) );
+                    g_i_part = max( log( abs( data_dis.mode))/log( 2) ,  find_int_part(data_dis, fixed_arg.Dfk_i ) );
                     g_i_list[state.index ] += g_i_part;
                     //f_part
                     data_dis = cal_distribution(l.weights , weight_len );  
-                    g_f_part = find_frac_part(data_dis,1,0.5);
+                    g_f_part = find_frac_part(data_dis, fixed_arg.Dwk_f , fixed_arg.Dwa_f);
                     g_f_list[state.index ] = g_f_part;
-#else
+    #else
                     g_i_part = g_i_list[state.index];
                     g_f_part = g_f_list[state.index];
                     //printf("%d ",g_f_part);
 
                     g_f_part= fixed_policy_adjust(g_i_part,g_f_part ,getenv("FIXED_POLICY_ADJUST"));
 
-#endif
+    #endif
 
 
                 array2fixed(l.weights,weight_len,g_i_part,g_f_part);
@@ -1009,13 +1034,13 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
         add_bias(l.output, l.biases, l.batch, l.n, out_h*out_w);
     else{
             //i_part
-#ifdef FIND_POINT
+    #ifdef FIND_POINT
             data_dis = cal_distribution(l.output ,output_tensor_len ); 
-            b_i_tmp = find_int_part(data_dis,3);
+            b_i_tmp = find_int_part(data_dis, fixed_arg.Afk_i);
             mode=data_dis.mode;
                     //printf("mid_mode= %d\n",data_dis.mode ) ;
             data_dis = cal_distribution(l.biases , bias_len );  
-            b_i_part = find_int_part(data_dis,3); 
+            b_i_part = find_int_part(data_dis, fixed_arg.Abk_i); 
             if( abs( mode)< abs( data_dis.mode)) mode=data_dis.mode;
                     //printf("bias_mode= %d\n",data_dis.mode ) ;
             b_i_part = max(b_i_tmp,b_i_part );
@@ -1024,15 +1049,15 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
 
             //f_part
             data_dis = cal_distribution(l.biases , bias_len  );  
-            b_f_part = find_frac_part(data_dis,1,0.5);
+            b_f_part = find_frac_part(data_dis,fixed_arg.Abk_f , fixed_arg.Aba_f);
             b_f_list[state.index ] = b_f_part;
 
 
-#else
+    #else
             b_i_part = b_i_list[state.index];
             b_f_part = b_f_list[state.index];
             //printf("%d ",b_i_part);
-#endif
+    #endif
         //cal fixed 
         array2fixed( l.output, output_tensor_len, b_i_part, b_f_part );
         array2fixed( l.biases, bias_len         , b_i_part, b_f_part);
@@ -1057,9 +1082,19 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
     //printf("convolution *count: %d, +count: %d\n",conv_mul,conv_add);
     //printf( "\tbias +count: %d\n ", bias_add  );
 
-    calculate_power_cost(conv_mul,conv_add,bias_add,g_i_part+g_f_part,b_i_part+b_f_part );
-    calculate_weight_storage(filter_size*l.n , l.n, g_i_part+g_f_part,b_i_part+b_f_part  );
-    
+#ifndef FIND_POINT
+    if(state.index==0){ 
+        calculate_power_cost(conv_mul,conv_add,bias_add,32,32 );
+        calculate_weight_storage(filter_size*l.n , l.n, 32,32  );
+    }    else{
+        calculate_power_cost(conv_mul,conv_add,bias_add,g_i_part+g_f_part,b_i_part+b_f_part );
+        calculate_weight_storage(filter_size*l.n , l.n, g_i_part+g_f_part,b_i_part+b_f_part  );
+    }
+    //if( g_i_part+g_f_part>=32) printf("TTTTTTTTTTTTTTTTTTTTTTTTTTT%d,%d\n",g_i_part+g_f_part ,state.index);
+#else
+    printf("fixing...\n");
+#endif
+
     
     if(l.binary || l.xnor) swap_binary(&l);
 

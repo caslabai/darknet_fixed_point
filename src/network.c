@@ -32,8 +32,8 @@
 #include "parser.h"
 double total_power;
 double total_power_ft;
-double weight_storage;
-double weight_storage_ft;
+long int weight_storage;
+long int weight_storage_ft;
 
 network *load_network_custom(char *cfg, char *weights, int clear, int batch)
 {
@@ -552,10 +552,17 @@ float *network_predict(network net, float *input)
     total_power_ft=0;
     weight_storage=0;
     weight_storage_ft=0;
-    forward_network(net, state);
-    printf("total_power: %e, power reduce:%.3f %% \n " ,total_power , (1-(total_power/total_power_ft ))*100 );
-    printf("weight_storage reduce: %.3f %% \n " , (1-(weight_storage/weight_storage_ft ))*100 );
     
+    forward_network(net, state);
+   
+#ifndef FIND_POINT
+    printf("total_power: %e, power reduce:%.3f %% \n\n " ,total_power , (1-(total_power/total_power_ft ))*100 );
+    printf("weight_storage reduce: %.3lf %% \n " , (1.0-((float)weight_storage/(float)weight_storage_ft ))*100.0 );
+    printf("\tweight_storage   : \t%ld \n " , weight_storage );
+    printf("\tweight_storage_FT: \t%ld \n " , weight_storage_ft );
+#else
+   printf("[network] fixing...\n");
+#endif
 
 
     float *out = get_network_output(net);

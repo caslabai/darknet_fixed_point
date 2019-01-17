@@ -7,10 +7,24 @@
 #include "cuda.h"
 #include "blas.h"
 #include "connected_layer.h"
+#include "fixed.h"
 
 #ifdef OPENCV
 #include "opencv2/highgui/highgui_c.h"
 #endif
+
+
+
+
+
+
+
+
+struct Fixed_arg_s fixed_arg;
+
+
+
+
 
 extern void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int top);
 extern void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, int ext_output);
@@ -354,9 +368,13 @@ void visualize(char *cfgfile, char *weightfile)
 }
 
 void load_binary_point(char *filename ){
-int i;
+//printf(">>>>>>>>>>>\n");
+//fflush(stdout);
+    int i;
     FILE *fp;
-    fp=fopen(filename,"r");
+    fp=fopen(filename,"r") ;
+    if(fp==NULL) printf("Fixed-point file not existed!\n") ;
+
     char * line = NULL;
     char * fixed_name = NULL;
     char * fixed_list = NULL;
@@ -365,13 +383,13 @@ int i;
 
     while ((getline(&line, &len, fp)) != -1) {
         //printf("%s", line);
-        
+
         fixed_name = strtok(line, ":" );
         fixed_list = strtok(NULL, ":\n");
-        
+
         printf("%s\n",fixed_name);
         printf("%s\n",fixed_list);
-        
+
         tmp = strtok(fixed_list , " ");
         i=0;
         //printf("%s<<<\n",fixed_name );
@@ -383,22 +401,22 @@ int i;
             else if( 0 == strcmp(fixed_name,"b_i_part")) b_i_list[i] = atoi(tmp);//,printf("3 ");
             else if( 0 == strcmp(fixed_name,"b_f_part")) b_f_list[i] = atoi(tmp);//,printf("4 ");
             else printf("parser ERROR!!\n"), exit(1);
-            
+
             tmp = strtok(NULL , " ");
             i++;
         }
     }
     /*
-    printf("\n");
-    for(i=0;i<20;i++)   printf("%d ",g_i_list[i]);
-    printf("\n");
-    for(i=0;i<20;i++)   printf("%d ",g_f_list[i]);
-    printf("\n");
-    for(i=0;i<20;i++)   printf("%d ",b_i_list[i]);
-    printf("\n");
-    for(i=0;i<20;i++)   printf("%d ",b_f_list[i]);
-    printf("\n");
-    */
+       printf("\n");
+       for(i=0;i<20;i++)   printf("%d ",g_i_list[i]);
+       printf("\n");
+       for(i=0;i<20;i++)   printf("%d ",g_f_list[i]);
+       printf("\n");
+       for(i=0;i<20;i++)   printf("%d ",b_i_list[i]);
+       printf("\n");
+       for(i=0;i<20;i++)   printf("%d ",b_f_list[i]);
+       printf("\n");
+     */
 
 
 
@@ -412,7 +430,12 @@ int main(int argc, char **argv)
 #endif
 
 
+#if defined(GEMM_FIXED) || defined(BIAS_FIXED) 
+
+fprintf(stderr,"WITH FIXED \n");
+init_fixed_arg( &fixed_arg );
 #ifdef FIND_POINT
+    fprintf(stderr,"For FIND_POINT=1\n");
     for(i=0;i<20;i++){
         g_i_list[i]=0;
         g_f_list[i]=0;
@@ -420,9 +443,15 @@ int main(int argc, char **argv)
         b_f_list[i]=0;
     }
 #else
-    load_binary_point("fixed_kitti.conf");
+    fprintf(stderr,"For FIND_POINT=0\n");
+    load_binary_point(getenv("RESTORE_BINARY_POINT"));
 
 #endif
+
+#else
+fprintf(stderr,"NO FIXED\n");
+#endif
+
 
     for (i = 0; i < argc; ++i) {
         if (!argv[i]) continue;
@@ -528,6 +557,38 @@ int main(int argc, char **argv)
     } else {
         fprintf(stderr, "Not an option: %s\n", argv[1]);
     }
+
+
+
+/*
+#ifdef FIND_POINT
+
+    FILE *ft = fopen(getenv("STORE_BINARY_POINT"),"w+");
+    extern double list_size;// plist->size ;
+    printf("image count: >>>>>>> %f\n",list_size);
+    fprintf(ft,"g_i_part: ");
+    for(i=0;i<net.n ;i++) fprintf(ft,"%d ",(int)ceil( (float)g_i_list[i]/list_size ) );
+    fprintf(ft,"\ng_f_part: ");
+    for(i=0;i<net.n ;i++) fprintf(ft,"%d ",g_f_list[i]);
+    fprintf(ft,"\nb_i_part: ");
+    for(i=0;i<net.n ;i++) fprintf(ft,"%d ",(int)ceil( (float)b_i_list[i]/list_size) );
+    fprintf(ft,"\nb_f_part: ");
+    for(i=0;i<net.n ;i++) fprintf(ft,"%d ",b_f_list[i]);
+
+    //printf("\n");
+#endif
+*/
+
+
+
+#if defined(GEMM_FIXED) || defined(BIAS_FIXED) 
+
+#ifndef FIND_POINT
+printf( "RESTORE_BINARY_POIN @--> %s\n",getenv("RESTORE_BINARY_POINT") );
+
+#endif
+#endif
+
     return 0;
 }
 

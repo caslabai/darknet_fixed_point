@@ -6,6 +6,7 @@
 #include "activations.h"
 #include "layer.h"
 #include "network.h"
+//#include "fixed.h"
 
 typedef layer convolutional_layer;
 

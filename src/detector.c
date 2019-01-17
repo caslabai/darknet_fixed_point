@@ -6,6 +6,7 @@
 #include "box.h"
 #include "demo.h"
 #include "option_list.h"
+#include "fixed.h"
 
 #ifdef OPENCV
 #include "opencv2/highgui/highgui_c.h"
@@ -33,12 +34,13 @@ void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_
 
 #include "http_stream.h"
 
+//double list_size;
 
 extern int g_i_list[199];
 extern int g_f_list[199];
 extern int b_i_list[199];
 extern int b_f_list[199];
-
+extern  struct Fixed_arg_s fixed_arg;
 
 int check_mistakes;
 
@@ -782,17 +784,28 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float
             free_image(val_resized[t]);
         }
     }
+    //list_size= m;// plist->size ;
 
 #ifdef FIND_POINT
 
-FILE *ft = fopen("fixed_coco.conf","w+");
+//FILE *ft = fopen(getenv("STORE_BINARY_POINT"),"w+");
 
+char filename[200];
+
+//sprintf(filename, "qvalue/fixed_Qvalue,Ki_%d,Kf_%d,af_%2.1f.fixed\0", fixed_arg.Abk_i , fixed_arg.Abk_f ,fixed_arg.Aba_f );
+sprintf(filename, "%s\0",getenv("STORE_BINARY_POINT") );
+
+FILE *ft = fopen(filename ,"w+");
+
+
+double list_size= m;// plist->size ;
+    printf("image count: >>>>>>> %f\n",list_size);
     fprintf(ft,"g_i_part: ");
-    for(i=0;i<net.n ;i++) fprintf(ft,"%d ",(int)ceil( (float)g_i_list[i]/20.0 ) );
+    for(i=0;i<net.n ;i++) fprintf(ft,"%d ",(int)ceil( (float)g_i_list[i]/list_size ) );
     fprintf(ft,"\ng_f_part: ");
     for(i=0;i<net.n ;i++) fprintf(ft,"%d ",g_f_list[i]);
     fprintf(ft,"\nb_i_part: ");
-    for(i=0;i<net.n ;i++) fprintf(ft,"%d ",(int)ceil( (float)b_i_list[i]/20.0 ) );
+    for(i=0;i<net.n ;i++) fprintf(ft,"%d ",(int)ceil( (float)b_i_list[i]/list_size) );
     fprintf(ft,"\nb_f_part: ");
     for(i=0;i<net.n ;i++) fprintf(ft,"%d ",b_f_list[i]);
 

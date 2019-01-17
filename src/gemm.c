@@ -78,6 +78,63 @@ void gemm(int TA, int TB, int M, int N, int K, float ALPHA,
     gemm_cpu( TA,  TB,  M, N, K, ALPHA,A,lda, B, ldb,BETA,C,ldc);
 }
 
+//==============================================================
+//============================ FIXED ==================================
+//==============================================================
+
+void gemm_nn_fixed(int M, int N, int K, float ALPHA,
+    float *A, int lda,
+    float *B, int ldb,
+    float *C, int ldc)
+{
+    int i, j, k;
+    for (i = 0; i < M; ++i) {
+        for (k = 0; k < K; ++k) {
+            register float A_PART = ALPHA*A[i*lda + k];
+            for (j = 0; j < N; ++j) {
+                //C[i*ldc + j] += A_PART*B[k*ldb + j];
+                C[i*ldc + j] = fix_mul_add( A_PART ,B[k*ldb + j] ,C[i*ldc + j] ,16,16);
+            }
+        }
+    }
+}
+
+
+void gemm_cpu_fixed(int TA, int TB, int M, int N, int K, float ALPHA,
+        float *A, int lda,
+        float *B, int ldb,
+        float BETA,
+        float *C, int ldc)
+{
+    //printf("cpu: %d %d %d %d %d %f %d %d %f %d\n",TA, TB, M, N, K, ALPHA, lda, ldb, BETA, ldc);
+    int t;
+    #pragma omp parallel for
+    for (t = 0; t < M; ++t) {
+        if (!TA && !TB)
+            gemm_nn_fixed(1, N, K, ALPHA, A + t*lda, lda, B, ldb, C + t*ldc, ldc);
+        else if (TA && !TB)
+            gemm_tn(1, N, K, ALPHA, A + t, lda, B, ldb, C + t*ldc, ldc);
+        else if (!TA && TB)
+            gemm_nt(1, N, K, ALPHA, A + t*lda, lda, B, ldb, C + t*ldc, ldc);
+        else
+            gemm_tt(1, N, K, ALPHA, A + t, lda, B, ldb, C + t*ldc, ldc);
+    }
+}
+
+
+void gemm_fixed(int TA, int TB, int M, int N, int K, float ALPHA,
+        float *A, int lda,
+        float *B, int ldb,
+        float BETA,
+        float *C, int ldc)
+{
+    gemm_cpu_fixed( TA,  TB,  M, N, K, ALPHA,A,lda, B, ldb,BETA,C,ldc);
+}
+
+
+//============================================================================
+
+
 
 //--------------------------------------------
 // XNOR bitwise GEMM for binary neural network
