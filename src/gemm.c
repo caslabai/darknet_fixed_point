@@ -7,6 +7,7 @@
 #include <math.h>
 #include <float.h>
 #include <string.h>
+#include "fixed.h"
 
 #if defined(_OPENMP)
 #include <omp.h>
@@ -85,15 +86,17 @@ void gemm(int TA, int TB, int M, int N, int K, float ALPHA,
 void gemm_nn_fixed(int M, int N, int K, float ALPHA,
     float *A, int lda,
     float *B, int ldb,
-    float *C, int ldc)
+    float *C, int ldc,int ipart,int fpart)
 {
     int i, j, k;
+    float tmpc;
     for (i = 0; i < M; ++i) {
         for (k = 0; k < K; ++k) {
-            register float A_PART = ALPHA*A[i*lda + k];
+            //register float A_PART = ALPHA*A[i*lda + k];
             for (j = 0; j < N; ++j) {
-                //C[i*ldc + j] += A_PART*B[k*ldb + j];
-                C[i*ldc + j] = fix_mul_add( A_PART ,B[k*ldb + j] ,C[i*ldc + j] ,16,16);
+                //C[i*ldc + j] = A[i*lda + k] * B[k*ldb + j] + C[i*ldc + j] ;
+                C[i*ldc + j] = fix_mul_add( A[i*lda + k] , B[k*ldb + j] , C[i*ldc + j] ,ipart,fpart);
+                //printf("-->%f, %f \n",C[i*ldc + j],tmpc);
             }
         }
     }
@@ -104,14 +107,14 @@ void gemm_cpu_fixed(int TA, int TB, int M, int N, int K, float ALPHA,
         float *A, int lda,
         float *B, int ldb,
         float BETA,
-        float *C, int ldc)
+        float *C, int ldc,int ipart,int fpart)
 {
     //printf("cpu: %d %d %d %d %d %f %d %d %f %d\n",TA, TB, M, N, K, ALPHA, lda, ldb, BETA, ldc);
     int t;
     #pragma omp parallel for
     for (t = 0; t < M; ++t) {
         if (!TA && !TB)
-            gemm_nn_fixed(1, N, K, ALPHA, A + t*lda, lda, B, ldb, C + t*ldc, ldc);
+            gemm_nn_fixed(1, N, K, ALPHA, A + t*lda, lda, B, ldb, C + t*ldc, ldc,ipart,fpart);
         else if (TA && !TB)
             gemm_tn(1, N, K, ALPHA, A + t, lda, B, ldb, C + t*ldc, ldc);
         else if (!TA && TB)
@@ -126,9 +129,9 @@ void gemm_fixed(int TA, int TB, int M, int N, int K, float ALPHA,
         float *A, int lda,
         float *B, int ldb,
         float BETA,
-        float *C, int ldc)
+        float *C, int ldc,int ipart,int fpart)
 {
-    gemm_cpu_fixed( TA,  TB,  M, N, K, ALPHA,A,lda, B, ldb,BETA,C,ldc);
+    gemm_cpu_fixed( TA,  TB,  M, N, K, ALPHA,A,lda, B, ldb,BETA,C,ldc,ipart,fpart);
 }
 
 

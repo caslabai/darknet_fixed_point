@@ -80,13 +80,13 @@ void gemm_fixed(int TA, int TB, int M, int N, int K, float ALPHA,
                     float *A, int lda,
                     float *B, int ldb,
                     float BETA,
-                    float *C, int ldc);
+                    float *C, int ldc,int ipart,int fpart);
 
 void gemm_cpu_fixed(int TA, int TB, int M, int N, int K, float ALPHA,
         float *A, int lda,
         float *B, int ldb,
         float BETA,
-        float *C, int ldc);
+        float *C, int ldc,int ipart,int fpart);
 
 //====================================================================================
 #ifdef GPU

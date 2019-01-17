@@ -121,6 +121,7 @@ do
             ;;
         i)
             #./darknet detector test $data  $cfg  $weight  data/bus.jpg -ext_output -thresh 0.2
+            echo "./darknet detector test $data  $cfg  $weight  data/cars_kitti.png -ext_output -thresh 0.2"
             ./darknet detector test $data  $cfg  $weight  data/cars_kitti.png -ext_output -thresh 0.2
             ;;
         c)

@@ -9,7 +9,7 @@ typedef struct fix_point{
     int ipart;
     int fpart;
     int bit_length;
-    unsigned int value;
+    int64_t value;
     //fromat: Qi.f
 }fixed ;
 

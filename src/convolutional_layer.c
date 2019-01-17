@@ -975,6 +975,8 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
             im2col_cpu_custom(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b);
 
             //4227
+//==========================================================================================
+//==========================================================================================
 #ifndef GEMM_FIXED    
             gemm(0, 0, m, n, k, 1, a, k, b, n, 1, c, n);
             // bit-count to float    
@@ -1005,7 +1007,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
 
                 array2fixed(l.weights,weight_len,g_i_part,g_f_part);
                 array2fixed(state.workspace , input_tensor_len, g_i_part ,g_f_part);
-                gemm(0, 0, m, n, k, 1, a, k, b, n, 1, c, n);
+                gemm_fixed(0, 0, m, n, k, 1, a, k, b, n, 1, c, n,g_i_part,g_f_part );
                     //printf("\tG: bitwise, %d  <%d,%d>\n",g_i_part+g_f_part,g_i_part,g_f_part);
             }
 
@@ -1061,7 +1063,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
         //cal fixed 
         array2fixed( l.output, output_tensor_len, b_i_part, b_f_part );
         array2fixed( l.biases, bias_len         , b_i_part, b_f_part);
-        add_bias(l.output, l.biases, l.batch, l.n, out_h*out_w);
+        add_bias_fixed(l.output, l.biases, l.batch, l.n, out_h*out_w);
             //printf("\tB: bitwise, %d  <%d,%d>\n",b_i_part+b_f_part,b_i_part,b_f_part);
     }
 
