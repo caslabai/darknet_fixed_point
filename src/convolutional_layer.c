@@ -544,14 +544,14 @@ void add_bias(float *output, float *biases, int batch, int n, int size)
         }
     }
 }
-void add_bias_fixed(float *output, float *biases, int batch, int n, int size)
+void add_bias_fixed(float *output, float *biases, int batch, int n, int size,int ipart ,int fpart )
 {
     int i,j,b;
     for(b = 0; b < batch; ++b){
         for(i = 0; i < n; ++i){
             for(j = 0; j < size; ++j){
                 //output[(b*n + i)*size + j] += biases[i];
-                output[(b*n + i)*size + j]=fix_mul_add(output[(b*n + i)*size + j],1,biases[i],16,16);
+                output[(b*n + i)*size + j]=fix_mul_add(output[(b*n + i)*size + j],1,biases[i],ipart , fpart);
             }
         }
     }
@@ -1063,7 +1063,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
         //cal fixed 
         array2fixed( l.output, output_tensor_len, b_i_part, b_f_part );
         array2fixed( l.biases, bias_len         , b_i_part, b_f_part);
-        add_bias_fixed(l.output, l.biases, l.batch, l.n, out_h*out_w);
+        add_bias_fixed(l.output, l.biases, l.batch, l.n, out_h*out_w, b_i_part, b_f_part);
             //printf("\tB: bitwise, %d  <%d,%d>\n",b_i_part+b_f_part,b_i_part,b_f_part);
     }
 
@@ -1105,14 +1105,18 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
 //data analysis
     struct distributed b_dis; 
     struct distributed w_dis; 
+    struct distributed o_dis; 
     b_dis=cal_distribution(l.biases,l.n);
-    w_dis=cal_distribution(l.weights,l.n);
+    w_dis=cal_distribution(l.weights,l.size*l.size*l.c*l.n );
+    o_dis=cal_distribution(l.output ,l.n*out_h*out_w  );
 
-    printf("[conv.cpp] layer: %d\n",state.index);
-    printf("[conv.cpp]   Biases , Std_dev: %.2f, Avg: %.2f,(Max,Min):(%.2f,%.2f), length: %d\n"
+    printf("[conv.c]layer: %d\n",state.index);
+    printf("[conv.c]Biases , Std_dev: %.2f, Avg: %.2f,(Max,Min):(%.2f,%.2f), length: %d\n"
             ,b_dis.stddev, b_dis.ave, b_dis.max, b_dis.min, l.n );
-    printf("[conv.cpp]   Weights, Std_dev: %.2f, Avg: %.2f,(Max,Min):(%.2f,%.2f), length: %d\n"
+    printf("[conv.c]Weights, Std_dev: %.2f, Avg: %.2f,(Max,Min):(%.2f,%.2f), length: %d\n"
             ,w_dis.stddev, w_dis.ave, w_dis.max, w_dis.min, l.n );
+    printf("[conv.c]out tensor, Std_dev: %.2f, Avg: %.2f,(Max,Min):(%.2f,%.2f), length: %d\n"
+            ,o_dis.stddev, o_dis.ave, o_dis.max, o_dis.min, l.n );
 
     gen_weight(l.biases ,l.n, l.weights , l.size*l.size*l.c*l.n , l.output , l.n*out_h*out_w , state.index);
     //printf(">>>>>>>><<<<<<<<<\n");
