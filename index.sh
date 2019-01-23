@@ -2,7 +2,11 @@
 
 find_new_fixed1=0
 #export RESTORE_BINARY_POINT=fixed_inet.conf
-export RESTORE_BINARY_POINT=qvalue/fixed_Qvalue_yolov3tiny_kitti,Q5_8.fixed
+export RESTORE_BINARY_POINT=qvalue/fixed_Qvalue_yolov3tiny_kitti,Q4_4.fixed
+
+#qvalue/fixed_Qvalue_yolov3tiny_kitti,QoriginalDYN.fixed
+
+#qvalue/fixed_Qvalue_yolov3tiny_kitti,Q5_8.fixed
 #qvalue/fixed_Qvalue_yolov3tiny_kitti,Ki_1,Kf_1,af_0.25.fixed
 #fixed_kitti.conf
 #qvalue/fixed_Qvalue_alexnet,Ki_3,Kf_1,af_0.25.fixed
@@ -120,9 +124,9 @@ do
             ./darknet detector map $data  $cfg $weight 
             ;;
         i)
-            #./darknet detector test $data  $cfg  $weight  data/bus.jpg -ext_output -thresh 0.2
-            echo "./darknet detector test $data  $cfg  $weight  data/cars_kitti.png -ext_output -thresh 0.2"
-            ./darknet detector test $data  $cfg  $weight  data/cars_kitti.png -ext_output -thresh 0.2
+            ./darknet detector test $data  $cfg  $weight  data/bus.jpg -ext_output -thresh 0.2
+            #echo "./darknet detector test $data  $cfg  $weight  data/cars_kitti.png -ext_output -thresh 0.2"
+            #./darknet detector test $data  $cfg  $weight  data/cars_kitti.png -ext_output -thresh 0.2
             ;;
         c)
             keeplayers=15
