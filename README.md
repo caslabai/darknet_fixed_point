@@ -1,9 +1,10 @@
 This repo is focus on yolov3-tiny
 
 After enable fixed point calculation in Makefile (fixed point only support on CPU, pls set `GPU=0` ) <br>
-You can setup frational point in `fixed.h`. 
+GEMM_FIXED=1, BIAS_FIXED=1<br>
 
-(only simulate the value range to fixed-point still calculate with float on cpu)
+fixed point calcuation is simulate by int64 & convert back to floating point after each convolution
+
 
 
 # Dataset
@@ -49,7 +50,7 @@ You can setup frational point in `fixed.h`.
 We need to decide fractional point for each layer by some data. <br>
 Set ` GEMM_FIXED & BIAS_FIXED =1` in Makefile <br>
 Set ` find_new_fixed=1` in `index.sh` and `index xx -b` <br>
-Run `./index kitti_small -m #run 20 image for decide fractional point `<br>
+Run `./index.sh kitti_small -m #run 20 image for decide fractional point `<br>
 
 Set `find_new_fixed=0 ` in `index.sh` and `index xx -b`<br>
 Run project with fixed point config file. <br>
@@ -58,7 +59,7 @@ Run project with fixed point config file. <br>
 # Run 
 
 Run yolov3-tiny for different config <br>
-`./index [kitti/voc/coco] -[?/i/m/t/...]` <br>
+`./index.sh [kitti/voc/coco] -[?/i/m/t/...]` <br>
 
 Choose the dataset you want and the opration to do.<br>
 You need to build up dataset first.<br>
