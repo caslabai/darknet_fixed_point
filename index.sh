@@ -2,7 +2,8 @@
 
 find_new_fixed1=0
 #export RESTORE_BINARY_POINT=fixed_inet.conf
-export RESTORE_BINARY_POINT=qvalue/fixed_Qvalue_yolov3tiny_kitti,Q4_4.fixed
+export RESTORE_BINARY_POINT=qvalue/fixed_Qvalue_yolov3tiny_kitti,Q5_8.fixed
+#qvalue/fixed_Qvalue_yolov3tiny_kitti,Q4_4.fixed
 
 #qvalue/fixed_Qvalue_yolov3tiny_kitti,QoriginalDYN.fixed
 
